@@ -12,13 +12,17 @@ import CreateProduct from "./pages/product/create";
 import EditProduct from "./pages/product/edit";
 import CategoryList from "./pages/billing/billing";
 import BillingPage from "./pages/billing/billing";
+import ErrorPage from "./components/common/error-404";
+import RequireGuest from "./providers/require-guest";
 
 const AppRoutingSetup = () => {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="/login" element={<LogIn />} />
-      <Route path="/register" element={<Register />} />
+      <Route element={<RequireGuest />}>
+        <Route path="/login" element={<LogIn />} />
+        <Route path="/register" element={<Register />} />
+      </Route>
 
       <Route element={<RequireAuth />}>
         <Route element={<LayoutPage />}>
@@ -33,8 +37,9 @@ const AppRoutingSetup = () => {
 
           <Route path="/options" element={<CategoryList />} />
         </Route>
+        <Route path="*" element={<ErrorPage />} />
       </Route>
-      <Route path="*" element={<Navigate to="" replace />} />
+      <Route path="*" element={<ErrorPage />} />
     </Routes>
   );
 };

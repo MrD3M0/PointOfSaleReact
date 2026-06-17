@@ -8,4 +8,6 @@ export const UrlConstants = {
   CATEGORY_URL: "/category",
   // Product Routes
   PRODUCT_URL: "/product",
+  // Billing Routes
+  BILLING_URL: "/bill",
 };

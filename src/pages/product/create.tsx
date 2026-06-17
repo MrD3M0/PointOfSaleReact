@@ -31,19 +31,19 @@ import {
   FormMessage,
 } from "@/components/form";
 import { getAllCategories } from "../categories/service/service";
-import {
-  ProductSchema,
-  ProductSchemaDefaultValues,
-  type T_ProductSchema,
-} from "./schema/schema";
+import { ProductSchema } from "./schema/schema";
 
 const CreateProduct = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  const form = useForm<T_ProductSchema>({
+  const form = useForm({
     resolver: zodResolver(ProductSchema),
-    defaultValues: { ...ProductSchemaDefaultValues },
+    defaultValues: {
+      name: "",
+      shortName: "",
+      categoryId: "",
+    },
   });
 
   const categoriesQuery = useQuery({
@@ -58,7 +58,7 @@ const CreateProduct = () => {
     onSuccess: () => {
       toast.success("Product created successfully.");
       qc.invalidateQueries({ queryKey: [QUERY_KEYS.PRODUCT_LIST] });
-      return navigate("/products");
+      navigate("/product");
     },
     onError: (error: AxiosError<T_UseQueryError>) => {
       mapFieldsOnError(error, form.setError);

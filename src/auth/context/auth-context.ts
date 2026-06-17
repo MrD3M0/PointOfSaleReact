@@ -3,6 +3,7 @@ import { createContext, useContext } from "react";
 
 export interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
   register: (
     username: string,
     email: string,
@@ -19,6 +20,7 @@ const defaultContext: AuthContextType = {
   auth: undefined,
   isAdmin: false,
   loading: true,
+  logout: () => {},
 };
 
 export const AuthContext = createContext<AuthContextType>(defaultContext);

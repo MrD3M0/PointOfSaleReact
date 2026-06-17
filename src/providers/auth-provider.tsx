@@ -11,6 +11,7 @@ import axiosInstance from "@/lib/axios-request";
 import { QUERY_KEYS } from "@/lib/query-keys";
 import { UrlConstants } from "@/constants/endpoints";
 import { AuthContext } from "@/auth/context/auth-context";
+import { Navigate } from "react-router";
 
 async function fetchCurrentUser(): Promise<UserModel> {
   const res = await axiosInstance.get(UrlConstants.ME_URL);
@@ -86,7 +87,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
     },
     [qc],
   );
-
+  // logout
+  const logout = useCallback(() => {
+    saveAuth(undefined);
+    return <Navigate to="/login" />;
+  }, [saveAuth]);
   // login
   const login = useCallback(
     async (email: string, password: string) => {
@@ -132,8 +137,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
       isAdmin,
       loading,
       saveAuth,
+      logout,
     }),
-    [auth, login, register, isAdmin, loading, saveAuth],
+    [auth, login, register, isAdmin, loading, saveAuth, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

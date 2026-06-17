@@ -31,11 +31,7 @@ import {
 } from "@/components/form";
 import { getAllCategories } from "../categories/service/service";
 import { getProductById, updateProduct } from "./service/service";
-import {
-  ProductSchema,
-  ProductSchemaDefaultValues,
-  type T_ProductSchema,
-} from "./schema/schema";
+import { ProductSchema } from "./schema/schema";
 import ScreenLoader from "@/components/ui/screen-loader";
 
 const EditProduct = () => {
@@ -43,9 +39,15 @@ const EditProduct = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  const form = useForm<T_ProductSchema>({
+  const form = useForm({
     resolver: zodResolver(ProductSchema),
-    defaultValues: { ...ProductSchemaDefaultValues },
+    defaultValues: {
+      name: "",
+      shortName: "",
+      categoryId: "",
+      price: 0,
+      quantity: 0,
+    },
   });
 
   const productQuery = useQuery({

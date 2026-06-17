@@ -45,11 +45,17 @@ export const createCategory = async (data: T_CategorySchema) => {
   return response.data;
 };
 
-export const getCategoryById = async (id: string) => {
+export const getProductsByCategoryId = async (id: string) => {
   const response: T_AxiosResponseWithPagination<T_Categories> =
     await axiosInstance.get(
       `${UrlConstants.PRODUCT_URL}${UrlConstants.CATEGORY_URL}/${id}`,
     );
+  return response.data;
+};
+
+export const getCategoryById = async (id: string) => {
+  const response: T_AxiosResponseWithoutPagination<T_Categories> =
+    await axiosInstance.get(`${UrlConstants.CATEGORY_URL}/${id}`);
   return response.data;
 };
 

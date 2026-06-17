@@ -8,8 +8,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/auth/context/auth-context";
 
 export default function Header() {
+  const { logout, auth } = useAuth();
   return (
     <header className="w-full border-b bg-background sticky top-0 z-50">
       <div className="flex h-16 w-full items-center justify-between px-4">
@@ -36,12 +38,20 @@ export default function Header() {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuLabel>
+              {auth?.user?.username || "User"}
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive focus:text-destructive">
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                logout();
+              }}
+            >
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
