@@ -11,7 +11,10 @@ import axiosInstance from "@/lib/axios-request";
 import { QUERY_KEYS } from "@/lib/query-keys";
 import { UrlConstants } from "@/constants/endpoints";
 import { AuthContext } from "@/auth/context/auth-context";
-import { Navigate } from "react-router";
+import { useNavigate } from "react-router";
+import { toast } from "sonner";
+
+import { AxiosError } from "axios";
 
 async function fetchCurrentUser(): Promise<UserModel> {
   const res = await axiosInstance.get(UrlConstants.ME_URL);
@@ -36,7 +39,7 @@ function applyTokenToAxios(token: string | undefined) {
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const qc = useQueryClient();
-
+  const navigate = useNavigate();
   const [auth, setAuth] = useState<AuthModel | undefined>(() => {
     const stored = readStoredAuth();
     return stored;
@@ -87,11 +90,21 @@ export function AuthProvider({ children }: PropsWithChildren) {
     },
     [qc],
   );
-  // logout
-  const logout = useCallback(() => {
-    saveAuth(undefined);
-    return <Navigate to="/login" />;
-  }, [saveAuth]);
+  const logout = useCallback(async () => {
+    try {
+      const res = await axiosInstance.get(UrlConstants.LOGOUT_URL);
+      toast.success(res.data?.message ?? "Logged out successfully");
+    } catch (error) {
+      const message =
+        error instanceof AxiosError
+          ? (error.response?.data?.message ?? error.message)
+          : "Logout failed";
+      toast.error(message);
+    } finally {
+      saveAuth(undefined);
+      navigate("/login", { replace: true });
+    }
+  }, [saveAuth, navigate]);
   // login
   const login = useCallback(
     async (email: string, password: string) => {

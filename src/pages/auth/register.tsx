@@ -26,6 +26,7 @@ import {
   type T_RegisterSchema,
 } from "./schema/resgister-schema";
 import { Link, Navigate } from "react-router-dom";
+import { toast, Toaster } from "sonner";
 
 const Register = () => {
   const { register: registerUser } = useAuth();
@@ -38,6 +39,7 @@ const Register = () => {
       password: "",
       confirmPassword: "",
     },
+    mode: "onBlur",
   });
 
   const onSubmit = async (values: T_RegisterSchema) => {
@@ -46,7 +48,8 @@ const Register = () => {
 
     try {
       setIsLoading(true);
-      await registerUser(username, email, password);
+      const result = await registerUser(username, email, password);
+      toast.success(result)
       Navigate({ to: "/login" });
     } catch (error) {
       console.log(error);
@@ -58,7 +61,7 @@ const Register = () => {
   return (
     <div className="w-screen h-screen flex justify-center items-center gap-16">
       <BrandedLayout />
-      <Card className="w-full max-w-md h-120">
+      <Card className="w-full max-w-md h-130">
         {isLoading && <ScreenLoader />}
         <CardHeader>
           <CardTitle>Register your account</CardTitle>

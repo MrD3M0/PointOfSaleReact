@@ -8,8 +8,8 @@ export const registerSchema = z
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z.string(),
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .refine((data) => data.password !== data.confirmPassword, {
     message: "Passwords don't match",
-    path: ["Confirmpassword"], // Sets the error to the confirm password field
+    path: ["confirmPassword"],
   });
 export type T_RegisterSchema = z.infer<typeof registerSchema>;

@@ -116,7 +116,7 @@ const UpdateCategory = () => {
           </div>
 
           <div className="flex justify-end items-center space-x-3 mb-5 mt-5">
-            <Link to={"/categories"}>
+            <Link to={"/category"}>
               <Button
                 type="button"
                 disabled={updateCategoryMutation.isPending}

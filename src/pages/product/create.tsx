@@ -5,19 +5,11 @@ import { AxiosError } from "axios";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
-
 import { type T_UseQueryError } from "@/types/common";
 import { QUERY_KEYS } from "@/lib/query-keys";
 import { mapFieldsOnError } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import PageHeader from "@/components/common/page-header";
 
 import { createProduct } from "./service/service";
@@ -32,6 +24,7 @@ import {
 } from "@/components/form";
 import { getAllCategories } from "../categories/service/service";
 import { ProductSchema } from "./schema/schema";
+import SelectCommand from "@/components/common/select-command";
 
 const CreateProduct = () => {
   const navigate = useNavigate();
@@ -121,7 +114,12 @@ const CreateProduct = () => {
                   <FormItem>
                     <FormLabel>Price</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="Eg: 35" {...field} />
+                      <Input
+                        type="number"
+                        placeholder="Eg: 35"
+                        value={field.value as number}
+                        onChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -135,7 +133,12 @@ const CreateProduct = () => {
                   <FormItem>
                     <FormLabel>Quantity</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="Eg: 150" {...field} />
+                      <Input
+                        type="number"
+                        placeholder="Eg: 150"
+                        value={field.value as number}
+                        onChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -148,24 +151,16 @@ const CreateProduct = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      disabled={categoriesQuery.isLoading}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SelectCommand
+                      value={field.value}
+                      onChange={field.onChange}
+                      options={categories.map((cat) => ({
+                        label: cat.name,
+                        value: cat.id,
+                      }))}
+                      loading={categoriesQuery.isLoading}
+                      placeholder="Select a category"
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -173,7 +168,7 @@ const CreateProduct = () => {
             </div>
 
             <div className="flex justify-end items-center space-x-3 mb-5 mt-5">
-              <Link to="/products">
+              <Link to="/product">
                 <Button
                   type="button"
                   variant="secondary"

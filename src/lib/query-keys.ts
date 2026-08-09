@@ -7,6 +7,9 @@ export const QUERY_KEYS = {
   PRODUCT_LIST: "products",
   PRODUCT: "product",
   BILL_LIST: "bills",
+  TOTAL_SALES: "sales",
+  BEST_SELLERS: "bestsellers",
+  LOW_STOCK: "lowstock",
 };
 
 export const queryClient = new QueryClient();

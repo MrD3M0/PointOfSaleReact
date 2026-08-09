@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { QUERY_KEYS } from "@/lib/query-keys";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getAllCategories,
   type T_Categories,
@@ -46,8 +46,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { isItemInCart } from "./utils/billing-functions";
-import { Minus, Plus, X } from "lucide-react";
+import { EditIcon, Info, Minus, PackageX, Plus, X } from "lucide-react";
 import { UpdateCartDialog } from "@/components/dialog/cartUpdate-dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  BillReceiptDialog,
+  type T_BillData,
+} from "@/components/dialog/bill-receipt-dialog";
 
 export default function BillingPage() {
   const [currentSelectedCategory, setCurrentSelectedCategory] =
@@ -59,8 +68,16 @@ export default function BillingPage() {
   >([]);
   const [billingItems, setBillingItems] = useState<T_BillingItem[]>([]);
   const [openCartUpdateDialog, setOpenCartUpdateDialog] =
-    useState<boolean>(false); 
-
+    useState<boolean>(false);
+  const [editingItem, setEditingItem] = useState<{
+    productId: string;
+    displayName: string;
+    currentQuantity: number;
+    quantityLimit: number;
+  } | null>(null);
+  const [billReceiptOpen, setBillReceiptOpen] = useState(false);
+  const [createdBill, setCreatedBill] = useState<T_BillData | null>(null);
+  const qc = useQueryClient();
   const form = useForm({
     resolver: zodResolver(billingItemSchema),
     defaultValues: { discountType: "Percentage", discount: 0 },
@@ -68,11 +85,24 @@ export default function BillingPage() {
 
   const createBillingMutation = useMutation({
     mutationFn: createBilling,
-    onSuccess: () => {
+    onSuccess: (res) => {
+      qc.invalidateQueries({
+        queryKey: [QUERY_KEYS.PRODUCT_LIST],
+      });
+      setCreatedBill(res.data);
+      setBillReceiptOpen(true);
+      setBillingItems([]);
+      setVisibleBillingItems([]);
+
       form.reset();
     },
     onError: (error: AxiosError<T_UseQueryError>) => {
-      alert(error.message);
+      const errors = error.response?.data?.data;
+
+      if (errors && !Array.isArray(errors) && errors["quantity"]) {
+        toast.error(errors["quantity"][0]);
+        return;
+      }
       mapFieldsOnError(error, form.setError);
     },
   });
@@ -120,12 +150,12 @@ export default function BillingPage() {
       prevItems.filter((item) => item.productId !== productId),
     );
   };
-  const increseProductToBilling = (productId: string) => {
+  const increseProductToBilling = (productId: string, quantity: number = 1) => {
     setBillingItems((prevItems) =>
       prevItems
         .map((item) =>
           item.productId === productId
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + quantity }
             : item,
         )
         .filter((item) => item.quantity > 0),
@@ -134,7 +164,7 @@ export default function BillingPage() {
       prevItems
         .map((item) =>
           item.productId === productId
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + quantity }
             : item,
         )
         .filter((item) => item.quantity > 0),
@@ -163,16 +193,37 @@ export default function BillingPage() {
   const handleAddProductToBilling = (
     product: T_Products | T_ProductsByCategory,
   ) => {
-    const { id, name, price } = product;
+    const { id, name, price, quantity } = product;
     const existingItem: boolean = isItemInCart(
       visibleBillingItems,
       billingItems,
       id,
     );
     if (existingItem) {
+      const cartItem = visibleBillingItems.find((i) => i.productId === id);
+      if (cartItem && cartItem.quantity >= quantity) {
+        toast.error(
+          <div className="flex flex-col gap-0.5">
+            <span className="font-semibold text-sm">Stock Limit Reached</span>
+            <span className="text-xs text-muted-foreground">
+              Only{" "}
+              <span className="font-medium text-foreground">
+                {cartItem.stockQuantity}
+              </span>{" "}
+              units available in stock.
+            </span>
+          </div>,
+          {
+            icon: (
+              <PackageX className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+            ),
+          },
+        );
+        return;
+      }
       setBillingItems((prevItems) =>
         prevItems.map((item) =>
-          item.productId === id 
+          item.productId === id
             ? { ...item, quantity: item.quantity + 1 }
             : item,
         ),
@@ -200,6 +251,7 @@ export default function BillingPage() {
           price: price,
           quantity: 1,
           total: price,
+          stockQuantity: quantity,
         },
       ]);
     }
@@ -213,8 +265,8 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="p-5 flex gap-3">
-      <Card className="w-3/5 h-147">
+    <div className="p-3 flex gap-3 h-screen no-scrollbar">
+      <Card className="w-1/2 h-[90%] overflow-hidden">
         {/* Search Input */}
         <div className="pl-2">
           <Input
@@ -253,7 +305,7 @@ export default function BillingPage() {
 
         {/* Products Grid */}
         <ScrollArea className="flex-1">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2">
             {debouncedSearch ? (
               <>
                 {getProductBySearchQuery.isLoading && (
@@ -281,15 +333,67 @@ export default function BillingPage() {
                 {SearchedProducts.map((product, index) => (
                   <Card
                     key={index}
-                    className="m-1.5 cursor-pointer hover:bg-muted/70 hover:shadow-md transition-all duration-150"
+                    className={`relative m-1.5 transition-all duration-150 ${
+                      product.quantity <= 0
+                        ? "opacity-50 cursor-not-allowed"
+                        : "cursor-pointer hover:bg-muted/70 hover:shadow-md"
+                    }`}
                     onClick={() => {
+                      if (product.quantity <= 0) {
+                        toast.error("This item is currently out of stock");
+                        return; // ✅ early return — add hँदैन
+                      }
                       handleAddProductToBilling(product);
                     }}
                   >
                     <CardContent className="p-3 flex flex-col gap-1">
-                      <span className="font-semibold text-sm truncate">
-                        {product.name}
-                      </span>
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-semibold text-sm truncate">
+                          {product.name}
+                        </span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label={`View details for ${product.name}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            >
+                              <Info className="h-4 w-4" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            align="end"
+                            className="w-64 text-sm"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="space-y-1.5">
+                              <p className="font-semibold leading-none">
+                                {product.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {product.shortName}
+                              </p>
+                              <div className="flex items-center justify-between pt-1">
+                                <span className="text-muted-foreground">
+                                  Price
+                                </span>
+                                <span className="font-medium">
+                                  Rs. {product.price}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-muted-foreground">
+                                  In Stock
+                                </span>
+                                <span className="font-medium">
+                                  {product.quantity}
+                                </span>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                       <span className="text-xs text-muted-foreground">
                         {product.shortName}
                       </span>
@@ -327,15 +431,67 @@ export default function BillingPage() {
                 {Products.map((product, index) => (
                   <Card
                     key={index}
-                    className="m-1.5 cursor-pointer hover:bg-muted/70 hover:shadow-md transition-all duration-150"
+                    className={`relative m-1.5 transition-all duration-150 ${
+                      product.quantity <= 0
+                        ? "opacity-50 cursor-not-allowed"
+                        : "cursor-pointer hover:bg-muted/70 hover:shadow-md"
+                    }`}
                     onClick={() => {
+                      if (product.quantity <= 0) {
+                        toast.error("This item is currently out of stock");
+                        return;
+                      }
                       handleAddProductToBilling(product);
                     }}
                   >
                     <CardContent className="p-3 flex flex-col gap-1">
-                      <span className="font-semibold text-sm truncate">
-                        {product.name}
-                      </span>
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-semibold text-sm truncate">
+                          {product.name}
+                        </span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label={`View details for ${product.name}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            >
+                              <Info className="h-4 w-4" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            align="end"
+                            className="w-64 text-sm"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="space-y-1.5">
+                              <p className="font-semibold leading-none">
+                                {product.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {product.shortName}
+                              </p>
+                              <div className="flex items-center justify-between pt-1">
+                                <span className="text-muted-foreground">
+                                  Price
+                                </span>
+                                <span className="font-medium">
+                                  Rs. {product.price}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-muted-foreground">
+                                  In Stock
+                                </span>
+                                <span className="font-medium">
+                                  {product.quantity}
+                                </span>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                       <span className="text-xs text-muted-foreground">
                         {product.shortName}
                       </span>
@@ -355,7 +511,7 @@ export default function BillingPage() {
           </div>
         </ScrollArea>
       </Card>
-      <Card className="w-2/5 h-147">
+      <Card className="w-1/2 h-[90%] overflow-hidden">
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit((data) => {
@@ -372,7 +528,7 @@ export default function BillingPage() {
             })}
           >
             <div className="grid grid-cols-1 p-3 gap-2">
-              <ScrollArea className="overflow-y-auto h-84 rounded-md border">
+              <ScrollArea className="overflow-y-auto overflow-x-auto h-55 rounded-md border">
                 <Table>
                   <TableHeader className="sticky top-0 bg-muted/50 z-10">
                     <TableRow className="hover:bg-muted/50">
@@ -383,7 +539,6 @@ export default function BillingPage() {
                         Quantity
                       </TableHead>
                       <TableHead className="text-right">Total</TableHead>
-                      <TableHead> </TableHead>
                       <TableHead> </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -399,7 +554,9 @@ export default function BillingPage() {
                         <TableRow key={index}>
                           <TableCell>{index + 1}</TableCell>
                           <TableCell>{item.productName}</TableCell>
-                          <TableCell>{item.price}</TableCell>
+                          <TableCell className="text-center">
+                            {item.price}
+                          </TableCell>
                           <TableCell>
                             <div className="flex items-center justify-center gap-1">
                               <Button
@@ -431,20 +588,45 @@ export default function BillingPage() {
                               </Button>
                             </div>
                           </TableCell>
-                          <TableCell>Rs.{item.quantity * item.price}</TableCell>
+                          <TableCell>
+                            <span className="flex justify-center items-center">
+                              Rs. {item.quantity * item.price}
+                            </span>
+                          </TableCell>
 
                           <TableCell>
-                            <Button
-                              type="button"
-                              variant={"ghost"}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                removeProductFromBilling(item.productId);
-                              }}
-                            >
-                              <X />
-                            </Button>
+                            <div className="flex items-center justify-center gap-2">
+                              {" "}
+                              <Button
+                                type="button"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setEditingItem({
+                                    productId: item.productId,
+                                    displayName: item.productName,
+                                    currentQuantity: item.quantity,
+                                    quantityLimit: item.stockQuantity ?? 0,
+                                  });
+                                  setOpenCartUpdateDialog(true);
+                                }}
+                              >
+                                <EditIcon className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={"ghost"}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  removeProductFromBilling(item.productId);
+                                }}
+                              >
+                                <X />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -473,9 +655,10 @@ export default function BillingPage() {
                       <SelectCommand
                         options={[
                           { label: "Percentage", value: "Percentage" },
-                          { label: "Fixed", value: "Fixed" },
+                          { label: "Flat", value: "Fixed" },
                         ]}
-                        {...field}
+                        value={field.value}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormMessage />
@@ -490,7 +673,12 @@ export default function BillingPage() {
                   <FormItem>
                     <FormLabel>Discount</FormLabel>
                     <FormControl>
-                      <Input placeholder="Eg: 5% or Rs.100" {...field} />
+                      <Input
+                        placeholder="Eg: 5% or Rs.100"
+                        value={field.value as number}
+                        onChange={field.onChange}
+                        onFocus={(e) => e.target.select()}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -520,11 +708,20 @@ export default function BillingPage() {
         </Form>
       </Card>
       <UpdateCartDialog
-      open={openCartUpdateDialog}
-      onOpenChange={setOpenCartUpdateDialog}
-      setVisibleCart={setVisibleBillingItems}
-      setActualCart={setBillingItems} 
-
+        key={editingItem?.productId}
+        open={openCartUpdateDialog}
+        onOpenChange={setOpenCartUpdateDialog}
+        productId={editingItem?.productId}
+        itemDisplayName={editingItem?.displayName}
+        itemQuantityLimit={editingItem?.quantityLimit}
+        currentQuantity={editingItem?.currentQuantity}
+        setVisibleCart={setVisibleBillingItems}
+        setActualCart={setBillingItems}
+      />
+      <BillReceiptDialog
+        open={billReceiptOpen}
+        onOpenChange={setBillReceiptOpen}
+        bill={createdBill}
       />
     </div>
   );

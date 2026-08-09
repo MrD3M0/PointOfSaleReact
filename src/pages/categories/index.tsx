@@ -88,13 +88,15 @@ const Categories = () => {
             <div className="w-full overflow-x-auto border rounded-md">
               <Table className="w-full table-auto">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16">S.N.</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Short Name</TableHead>
-                    <TableHead>Created At</TableHead>
-                    <TableHead>Updated At</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                  <TableRow className="bg-muted hover:bg-muted">
+                    <TableHead className="w-16 border-r">SN</TableHead>
+                    <TableHead className="border-r">Name</TableHead>
+                    <TableHead className="border-r">Short Name</TableHead>
+                    <TableHead className="border-r">Created At</TableHead>
+                    <TableHead className="border-r">Updated At</TableHead>
+                    <TableHead className="text-right border-r">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
 
@@ -110,7 +112,10 @@ const Categories = () => {
                     </TableRow>
                   ) : (
                     rows.map((item, idx) => (
-                      <TableRow key={item.id}>
+                      <TableRow
+                        key={item.id}
+                        className="divide-x divide-border"
+                      >
                         <TableCell>{(page - 1) * LIMIT + idx + 1}</TableCell>
                         <TableCell>{item.name ?? "—"}</TableCell>
                         <TableCell>{item.shortName ?? "—"}</TableCell>

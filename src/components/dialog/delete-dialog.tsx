@@ -46,7 +46,6 @@ const ConfirmDeleteDialog: FC<GenericConfirmDeleteDialogProps> = ({
   itemName = "item",
   onSuccessCallback,
 }) => {
- 
   const qc = useQueryClient();
 
   const deleteMutation = useMutation({

@@ -6,7 +6,11 @@ export type T_AxiosResponseWithoutPagination<T> = AxiosResponse<{
   code: number;
   data: T;
 }>;
-
+export type T_AxiosResponseWithoutAnything = AxiosResponse<{
+  success: boolean;
+  message: string;
+  code: number;
+}>;
 export type T_AxiosResponseWithPagination<T> = AxiosResponse<{
   success: boolean;
   message: string;

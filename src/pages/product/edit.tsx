@@ -12,13 +12,7 @@ import { QUERY_KEYS } from "@/lib/query-keys";
 import { mapFieldsOnError } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import PageHeader from "@/components/common/page-header";
 
 import {
@@ -33,6 +27,7 @@ import { getAllCategories } from "../categories/service/service";
 import { getProductById, updateProduct } from "./service/service";
 import { ProductSchema } from "./schema/schema";
 import ScreenLoader from "@/components/ui/screen-loader";
+import SelectCommand from "@/components/common/select-command";
 
 const EditProduct = () => {
   const { id } = useParams();
@@ -49,19 +44,17 @@ const EditProduct = () => {
       quantity: 0,
     },
   });
-
-  const productQuery = useQuery({
-    queryKey: [QUERY_KEYS.PRODUCT, id],
-    queryFn: () => getProductById(id ?? ""),
-    enabled: !!id,
-  });
-
   const categoriesQuery = useQuery({
     queryKey: [QUERY_KEYS.CATEGORY_LIST],
     queryFn: () => getAllCategories({ limit: 100 }),
   });
 
   const categories = categoriesQuery.data?.data?.data ?? [];
+  const productQuery = useQuery({
+    queryKey: [QUERY_KEYS.PRODUCT, id],
+    queryFn: () => getProductById(id ?? ""),
+    enabled: !!id && categoriesQuery.isSuccess,
+  });
 
   useEffect(() => {
     if (productQuery.isSuccess && productQuery.data) {
@@ -81,7 +74,7 @@ const EditProduct = () => {
     onSuccess: () => {
       toast.success("Product updated successfully.");
       qc.invalidateQueries({ queryKey: [QUERY_KEYS.PRODUCT_LIST] });
-      return navigate("/products");
+      return navigate("/product");
     },
     onError: (error: AxiosError<T_UseQueryError>) => {
       mapFieldsOnError(error, form.setError);
@@ -89,7 +82,8 @@ const EditProduct = () => {
     },
   });
 
-  if (productQuery.isLoading) return <ScreenLoader />;
+  if (productQuery.isLoading || categoriesQuery.isLoading)
+    return <ScreenLoader />;
 
   return (
     <div className="p-5">
@@ -124,7 +118,6 @@ const EditProduct = () => {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="shortName"
@@ -138,7 +131,6 @@ const EditProduct = () => {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="price"
@@ -149,15 +141,14 @@ const EditProduct = () => {
                       <Input
                         type="number"
                         placeholder="Eg: 35"
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                        value={field.value as number}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="quantity"
@@ -168,8 +159,8 @@ const EditProduct = () => {
                       <Input
                         type="number"
                         placeholder="Eg: 150"
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                        value={field.value as number}
+                        onChange={field.onChange}
                       />
                     </FormControl>
                     <FormMessage />
@@ -183,24 +174,18 @@ const EditProduct = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={categoriesQuery.isLoading}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <SelectCommand
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={categories.map((cat) => ({
+                          label: cat.name,
+                          value: cat.id,
+                        }))}
+                        loading={categoriesQuery.isLoading}
+                        placeholder="Select a category"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -208,7 +193,7 @@ const EditProduct = () => {
             </div>
 
             <div className="flex justify-end items-center space-x-3 mb-5 mt-5">
-              <Link to="/products">
+              <Link to="/product">
                 <Button
                   type="button"
                   variant="secondary"

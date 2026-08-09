@@ -1,4 +1,4 @@
-import { useState, type Dispatch } from "react";
+import { useEffect, useState, type Dispatch } from "react";
 import {
   Dialog,
   DialogContent,
@@ -33,20 +33,24 @@ export const UpdateCartDialog: React.FC<T_cartUpdateDialogProps> = ({
   productId,
   itemDisplayName,
   itemQuantityLimit = 99,
-  currentQuantity = 1, // ✅ prop bata directly
+  currentQuantity = 1,
   setVisibleCart,
   setActualCart,
 }) => {
-  // ✅ key prop trick use garcha — dialog re-mount huda fresh state aaucha
-  const [quantity, setQuantity] = useState<number>(currentQuantity);
+  const [quantity, setQuantity] = useState<string>("");
   const [error, setError] = useState<string>("");
 
-  const handleSave = () => {
-    const qty = Math.floor(quantity);
+  useEffect(() => {
+    setQuantity(String(currentQuantity));
+    setError("");
+  }, [currentQuantity, open]);
 
-    if (isNaN(qty) || qty < 1 || qty <= itemQuantityLimit) {
+  const handleSave = () => {
+    const qty = Math.floor(Number(quantity));
+
+    if (quantity.trim() === "" || isNaN(qty) || qty < 1) {
       setError("Quantity must be at least 1");
-      toast.error("Quantity must be at least 1 ");
+      toast.error("Quantity must be at least 1");
       return;
     }
     if (qty > itemQuantityLimit) {
@@ -91,7 +95,9 @@ export const UpdateCartDialog: React.FC<T_cartUpdateDialogProps> = ({
               max={itemQuantityLimit}
               className="col-span-3"
               onChange={(e) => {
-                setQuantity(Number(e.target.value));
+                const raw = e.target.value;
+                const sanitized = raw === "" ? "" : String(Number(raw));
+                setQuantity(sanitized);
                 setError("");
               }}
             />

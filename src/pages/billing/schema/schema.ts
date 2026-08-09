@@ -21,4 +21,7 @@ export const billingItemSchema = z
     },
   );
 
-export type T_BillingItemSchema = z.infer<typeof billingItemSchema>;
+export type T_BillingItemSchema = {
+  discountType: "Percentage" | "Fixed";
+  discount: number;
+};

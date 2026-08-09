@@ -77,7 +77,7 @@ export const removeProduct = async (id: string) => {
 };
 
 export const productsByCategory = async (id: string) => {
-  const response: T_AxiosResponseWithPagination<T_ProductsByCategory> =
+  const response: T_AxiosResponseWithoutPagination<T_ProductsByCategory[]> =
     await axiosInstance.get(`${UrlConstants.PRODUCT_URL}/category/${id}`, {
       params: {
         page: 1,

@@ -9,6 +9,7 @@ export type T_ShowBillingItem = {
   price: number;
   quantity: number;
   total?: number;
+  stockQuantity: number;
 };
 
 export type T_CreateBillingData = {

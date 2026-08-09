@@ -10,8 +10,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <Toaster richColors position="top-right" closeButton />
         <AuthProvider>
-          <Toaster richColors position="top-right" closeButton />
           <AppRoutingSetup />
         </AuthProvider>
       </BrowserRouter>

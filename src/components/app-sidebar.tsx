@@ -5,16 +5,11 @@ import {
   ShoppingCartIcon,
   PackageIcon,
   TagsIcon,
-  TruckIcon,
-  ShelvingUnit,
 } from "lucide-react";
 import { NavMain } from "@/components/nav-main";
-
-import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -52,17 +47,6 @@ const posSidebarData = {
       url: "/billing",
       icon: ShoppingCartIcon,
     },
-
-    {
-      title: "Inventory",
-      url: "/inventory",
-      icon: ShelvingUnit,
-    },
-    {
-      title: "Suppliers",
-      url: "/pos/suppliers",
-      icon: TruckIcon,
-    },
   ],
 };
 
@@ -75,7 +59,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             {open && (
               <SidebarMenuButton className="w-full flex justify-between">
-                 <span>Zap Point Of Sale</span>
+                <span>Zap Point Of Sale</span>
                 <SidebarTrigger />
               </SidebarMenuButton>
             )}
@@ -88,10 +72,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={posSidebarData.navMain} />
       </SidebarContent>
-
-      <SidebarFooter>
-        <NavUser user={posSidebarData.user} />
-      </SidebarFooter>
     </Sidebar>
   );
 }
