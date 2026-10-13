@@ -10,4 +10,6 @@ export const UrlConstants = {
   PRODUCT_URL: "/product",
   // Billing Routes
   BILLING_URL: "/bill",
+  // Batch Routes
+  BATCH_URL: "/batch",
 };
